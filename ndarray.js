@@ -22,19 +22,19 @@ function order() {
   return result
 }
 
-function compileConstructor(dtype, dimension) {
-  var className = ["View", dimension, "d", dtype].join("")
-  if(dimension < 0) {
-    className = "View_Nil" + dtype
+function compileConstructor(inType, inDimension) {
+  var className = ["View", inDimension, "d", inType].join("")
+  if(inDimension < 0) {
+    className = "View_Nil" + inType
   }
-  var useGetters = (dtype === "generic")
+  var useGetters = (inType === "generic")
 
-  if(dimension === -1) {
+  if(inDimension === -1) {
     //Special case for trivial arrays
     var code =
       "function "+className+"(a){this.data=a;};\
 var proto="+className+".prototype;\
-proto.dtype='"+dtype+"';\
+proto.dtype='"+inType+"';\
 proto.index=function(){return -1};\
 proto.size=0;\
 proto.dimension=-1;\
@@ -46,7 +46,7 @@ proto.pick=function(){return null};\
 return function construct_"+className+"(a){return new "+className+"(a);}"
     var procedure = new Function(code)
     return procedure()
-  } else if(dimension === 0) {
+  } else if(inDimension === 0) {
     //Special case for 0d arrays
     var code =
       "function "+className+"(a,d) {\
@@ -54,7 +54,7 @@ this.data = a;\
 this.offset = d\
 };\
 var proto="+className+".prototype;\
-proto.dtype='"+dtype+"';\
+proto.dtype='"+inType+"';\
 proto.index=function(){return this.offset};\
 proto.dimension=0;\
 proto.size=1;\
@@ -78,13 +78,13 @@ return "+(useGetters ? "this.data.set(this.offset,v)" : "this.data[this.offset]=
 };\
 return function construct_"+className+"(a,b,c,d){return new "+className+"(a,d)}"
     var procedure = new Function("TrivialArray", code)
-    return procedure(CACHED_CONSTRUCTORS[dtype][0])
+    return procedure(CACHED_CONSTRUCTORS[inType][0])
   }
 
   var code = ["'use strict'"]
 
   //Create constructor for view
-  var indices = iota(dimension)
+  var indices = iota(inDimension)
   var args = indices.map(function(i) { return "i"+i })
   var index_str = "this.offset+" + indices.map(function(i) {
         return "this.stride[" + i + "]*i" + i
@@ -101,8 +101,8 @@ return function construct_"+className+"(a,b,c,d){return new "+className+"(a,d)}"
       "this.stride=[" + strideArg + "]",
       "this.offset=d|0}",
     "var proto="+className+".prototype",
-    "proto.dtype='"+dtype+"'",
-    "proto.dimension="+dimension)
+    "proto.dtype='"+inType+"'",
+    "proto.dimension="+inDimension)
 
   //view.size:
   code.push("Object.defineProperty(proto,'size',{get:function "+className+"_size(){\
@@ -110,15 +110,15 @@ return "+indices.map(function(i) { return "this.shape["+i+"]" }).join("*"),
 "}})")
 
   //view.order:
-  if(dimension === 1) {
+  if(inDimension === 1) {
     code.push("proto.order=[0]")
   } else {
     code.push("Object.defineProperty(proto,'order',{get:")
-    if(dimension < 4) {
+    if(inDimension < 4) {
       code.push("function "+className+"_order(){")
-      if(dimension === 2) {
+      if(inDimension === 2) {
         code.push("return (Math.abs(this.stride[0])>Math.abs(this.stride[1]))?[1,0]:[0,1]}})")
-      } else if(dimension === 3) {
+      } else if(inDimension === 3) {
         code.push(
 "var s0=Math.abs(this.stride[0]),s1=Math.abs(this.stride[1]),s2=Math.abs(this.stride[2]);\
 if(s0>s1){\
@@ -176,7 +176,7 @@ return [0,2,1];\
   var a_vars = indices.map(function(i) { return "a"+i+"=this.shape["+i+"]" })
   var c_vars = indices.map(function(i) { return "c"+i+"=this.stride["+i+"]" })
   code.push("proto.lo=function "+className+"_lo("+args.join(",")+"){var b=this.offset,d=0,"+a_vars.join(",")+","+c_vars.join(","))
-  for(var i=0; i<dimension; ++i) {
+  for(var i=0; i<inDimension; ++i) {
     code.push(
 "if(typeof i"+i+"==='number'&&i"+i+">=0){\
 d=i"+i+"|0;\
@@ -199,7 +199,7 @@ a"+i+"-=d}")
     indices.map(function(i) {
       return "b"+i+"=this.stride["+i+"]"
     }).join(",")+",c=this.offset,d=0,ceil=Math.ceil")
-  for(var i=0; i<dimension; ++i) {
+  for(var i=0; i<inDimension; ++i) {
     code.push(
 "if(typeof i"+i+"==='number'){\
 d=i"+i+"|0;\
@@ -221,9 +221,9 @@ b"+i+"*=d\
     }).join(",")+",c)}")
 
   //view.transpose():
-  var tShape = new Array(dimension)
-  var tStride = new Array(dimension)
-  for(var i=0; i<dimension; ++i) {
+  var tShape = new Array(inDimension)
+  var tStride = new Array(inDimension)
+  for(var i=0; i<inDimension; ++i) {
     tShape[i] = "a[i"+i+"]"
     tStride[i] = "b[i"+i+"]"
   }
@@ -233,7 +233,7 @@ b"+i+"*=d\
 
   //view.pick():
   code.push("proto.pick=function "+className+"_pick("+args+"){var a=[],b=[],c=this.offset")
-  for(var i=0; i<dimension; ++i) {
+  for(var i=0; i<inDimension; ++i) {
     code.push("if(typeof i"+i+"==='number'&&i"+i+">=0){c=(c+this.stride["+i+"]*i"+i+")|0}else{a.push(this.shape["+i+"]);b.push(this.stride["+i+"])}")
   }
   code.push("var ctor=CTOR_LIST[a.length+1];return ctor(this.data,a,b,c)}")
@@ -249,7 +249,7 @@ b"+i+"*=d\
 
   //Compile procedure
   var procedure = new Function("CTOR_LIST", "ORDER", code.join("\n"))
-  return procedure(CACHED_CONSTRUCTORS[dtype], order)
+  return procedure(CACHED_CONSTRUCTORS[inType], order)
 }
 
 function arrayDType(data) {
@@ -337,10 +337,10 @@ function wrappedNDArrayCtor(data, shape, stride, offset) {
       }
     }
   }
-  var dtype = arrayDType(data)
-  var ctor_list = CACHED_CONSTRUCTORS[dtype]
+  var inType = arrayDType(data)
+  var ctor_list = CACHED_CONSTRUCTORS[inType]
   while(ctor_list.length <= d+1) {
-    ctor_list.push(compileConstructor(dtype, ctor_list.length-1))
+    ctor_list.push(compileConstructor(inType, ctor_list.length-1))
   }
   var ctor = ctor_list[d+1]
   return ctor(data, shape, stride, offset)
