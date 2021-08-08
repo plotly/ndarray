@@ -34,7 +34,7 @@ function compileConstructor(inType, inDimension) {
     var code =
       "function "+className+"(a){this.data=a;};\
 var proto="+className+".prototype;\
-proto.dtype='"+inType+"';\
+proto.dtype=dtype;\
 proto.index=function(){return -1};\
 proto.size=0;\
 proto.dimension=-1;\
@@ -44,8 +44,8 @@ function(){return new "+className+"(this.data);};\
 proto.get=proto.set=function(){};\
 proto.pick=function(){return null};\
 return function construct_"+className+"(a){return new "+className+"(a);}"
-    var procedure = new Function(code)
-    return procedure()
+    var procedure = new Function("dtype", code)
+    return procedure(inType)
   } else if(inDimension === 0) {
     //Special case for 0d arrays
     var code =
@@ -54,7 +54,7 @@ this.data = a;\
 this.offset = d\
 };\
 var proto="+className+".prototype;\
-proto.dtype='"+inType+"';\
+proto.dtype=dtype;\
 proto.index=function(){return this.offset};\
 proto.dimension=0;\
 proto.size=1;\
@@ -77,8 +77,8 @@ proto.set=function "+className+"_set(v){\
 return "+(useGetters ? "this.data.set(this.offset,v)" : "this.data[this.offset]=v")+"\
 };\
 return function construct_"+className+"(a,b,c,d){return new "+className+"(a,d)}"
-    var procedure = new Function("TrivialArray", code)
-    return procedure(CACHED_CONSTRUCTORS[inType][0])
+    var procedure = new Function("dtype", "TrivialArray", code)
+    return procedure(inType, CACHED_CONSTRUCTORS[inType][0])
   }
 
   var code = ["'use strict'"]
@@ -101,7 +101,7 @@ return function construct_"+className+"(a,b,c,d){return new "+className+"(a,d)}"
       "this.stride=[" + strideArg + "]",
       "this.offset=d|0}",
     "var proto="+className+".prototype",
-    "proto.dtype='"+inType+"'",
+    "proto.dtype=dtype",
     "proto.dimension="+inDimension)
 
   //view.size:
@@ -248,8 +248,8 @@ b"+i+"*=d\
     }).join(",")+",offset)}")
 
   //Compile procedure
-  var procedure = new Function("CTOR_LIST", "ORDER", code.join("\n"))
-  return procedure(CACHED_CONSTRUCTORS[inType], order)
+  var procedure = new Function("dtype", "CTOR_LIST", "ORDER", code.join("\n"))
+  return procedure(inType, CACHED_CONSTRUCTORS[inType], order)
 }
 
 function arrayDType(data) {
