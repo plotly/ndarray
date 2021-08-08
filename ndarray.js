@@ -27,7 +27,6 @@ function compileConstructor(inType, inDimension) {
   if(inDimension < 0) {
     className = "View_Nil" + inType
   }
-  var useGetters = (inType === "generic")
 
   if(inDimension === -1) {
     //Special case for trivial arrays
@@ -71,11 +70,9 @@ proto.pick=function "+className+"_pick(){\
 return TrivialArray(this.data);\
 };\
 proto.valueOf=proto.get=function "+className+"_get(){\
-return "+(useGetters ? "this.data.get(this.offset)" : "this.data[this.offset]")+
-"};\
+return dtype === 'generic' ? this.data.get(this.offset) : this.data[this.offset];};\
 proto.set=function "+className+"_set(v){\
-return "+(useGetters ? "this.data.set(this.offset,v)" : "this.data[this.offset]=v")+"\
-};\
+return dtype === 'generic' ? this.data.set(this.offset,v) : this.data[this.offset]=v;};\
 return function construct_"+className+"(a,b,c,d){return new "+className+"(a,d)}"
     var procedure = new Function("dtype", "TrivialArray", code)
     return procedure(inType, CACHED_CONSTRUCTORS[inType][0])
@@ -145,19 +142,13 @@ return [0,2,1];\
   //view.set(i0, ..., v):
   code.push(
 "proto.set=function "+className+"_set("+args.join(",")+",v){")
-  if(useGetters) {
-    code.push("return this.data.set("+index_str+",v)}")
-  } else {
-    code.push("return this.data["+index_str+"]=v}")
-  }
+  code.push(
+    "return dtype === 'generic' ? this.data.set("+index_str+",v) : this.data["+index_str+"]=v;};")
 
   //view.get(i0, ...):
   code.push("proto.get=function "+className+"_get("+args.join(",")+"){")
-  if(useGetters) {
-    code.push("return this.data.get("+index_str+")}")
-  } else {
-    code.push("return this.data["+index_str+"]}")
-  }
+  code.push(
+    "return dtype === 'generic' ? this.data.get("+index_str+") : this.data["+index_str+"];};")
 
   //view.index:
   code.push(
