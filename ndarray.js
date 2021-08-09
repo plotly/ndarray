@@ -22,7 +22,8 @@ function order() {
 }
 
 var allFns = {
-  G: function (dtype) {
+  // Special case for trivial arrays
+  T: function (dtype) {
     function View(a) {
       this.data = a
     }
@@ -49,6 +50,8 @@ var allFns = {
       return new View(a)
     }
   },
+
+  // Special case for 0d arrays
   0: function (dtype, TrivialArray) {
     function View(a, d) {
       this.data = a
@@ -82,6 +85,7 @@ var allFns = {
       return new View(a, d)
     }
   },
+
   1: function (dtype, CTOR_LIST, ORDER) {
     function View(a, b0, c0, d) {
       this.data = a
@@ -885,7 +889,7 @@ var allFns = {
 
 
 function compileConstructor(inType, inDimension) {
-  var dKey = inDimension === -1 ? 'G' : String(inDimension)
+  var dKey = inDimension === -1 ? 'T' : String(inDimension)
 
   var procedure = allFns[dKey]
   if(inDimension === -1) {
@@ -912,14 +916,14 @@ function arrayDType(data) {
         return "int16"
       case "[object Int32Array]":
         return "int32"
+      case "[object Uint8ClampedArray]":
+        return "uint8_clamped"
       case "[object Uint8Array]":
         return "uint8"
       case "[object Uint16Array]":
         return "uint16"
       case "[object Uint32Array]":
         return "uint32"
-      case "[object Uint8ClampedArray]":
-        return "uint8_clamped"
       case "[object BigInt64Array]":
         return "bigint64"
       case "[object BigUint64Array]":
@@ -933,20 +937,22 @@ function arrayDType(data) {
 }
 
 var CACHED_CONSTRUCTORS = {
+  "generic":[],
+  "buffer":[],
+  "array":[],
+
+  // typed arrays
   "float32":[],
   "float64":[],
   "int8":[],
   "int16":[],
   "int32":[],
+  "uint8_clamped":[],
   "uint8":[],
   "uint16":[],
   "uint32":[],
-  "array":[],
-  "uint8_clamped":[],
   "bigint64": [],
-  "biguint64": [],
-  "buffer":[],
-  "generic":[]
+  "biguint64": []
 }
 
 ;(function() {
