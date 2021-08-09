@@ -23,10 +23,8 @@ function order() {
 }
 
 function compileConstructor(inType, inDimension) {
-  var className = ["View", inDimension, "d", inType].join("")
-  if(inDimension < 0) {
-    className = "View_Nil" + inType
-  }
+  var dKey = inDimension === -1 ? 'G' : inDimension
+  var className = "View" + dKey
 
   if(inDimension === -1) {
     //Special case for trivial arrays
