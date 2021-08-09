@@ -7,7 +7,6 @@
     "test": "test"
   },
   "dependencies": {
-    "iota-array": "^1.0.0",
     "is-buffer": "^1.0.2"
   },
   "devDependencies": {
