@@ -13,6 +13,13 @@ Modular multidimensional arrays for JavaScript.
 ##### Coming from MATLAB or numpy? See: [scijs/ndarray for MATLAB users](https://github.com/scijs/scijs-ndarray-for-matlab-users)
 ##### [Big list of ndarray modules](https://github.com/scijs/ndarray/wiki/ndarray-module-list#core-module)
 
+<div align="center">
+  <a href="https://dash.plotly.com/project-maintenance">
+    <img src="https://dash.plotly.com/assets/images/maintained-by-plotly.png" width="400px" alt="Maintained by Plotly">
+  </a>
+</div>
+
+
 Introduction
 ============
 `ndarrays` provide higher dimensional views of 1D arrays.  For example, here is how you can turn a length 4 typed array into an nd-array:
